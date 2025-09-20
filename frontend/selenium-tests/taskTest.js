@@ -5,7 +5,7 @@ import { Builder, By, until } from "selenium-webdriver";
 
   try {
     // 1️⃣ Open the Task Add page
-    await driver.get("http://localhost:5173"); // adjust URL if needed
+    await driver.get("http://localhost:5174"); // adjust URL if needed
 
     // 2️⃣ Fill in task title
     const titleInput = await driver.wait(
