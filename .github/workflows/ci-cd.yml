@@ -60,8 +60,8 @@ jobs:
           sudo apt-get install -y google-chrome-stable
 
       - name: Run Selenium tests
-        working-directory: ./frontend
-        run: npm run test:selenium
+        working-directory: ./frontend/selenium-tests
+        run: node selenium-tests/taskTest.js
 
       - name: Show logs on failure
         if: failure()
