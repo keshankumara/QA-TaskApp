@@ -1,11 +1,76 @@
 import { Builder, By, until } from "selenium-webdriver";
+import chrome from "selenium-webdriver/chrome.js";
+import { tmpdir } from "os";
+import process from "process";
+
+async function waitForServer(url, timeout = 30000) {
+  const start = Date.now();
+  while (Date.now() - start < timeout) {
+    try {
+      const response = await fetch(url);
+      if (response.ok) return true;
+    } catch {
+      // Server not ready yet
+    }
+    await new Promise(resolve => setTimeout(resolve, 1000));
+  }
+  throw new Error(`Server at ${url} not ready within ${timeout}ms`);
+}
 
 (async function taskTest() {
-  let driver = await new Builder().forBrowser("chrome").build();
+  // Try different ports for frontend server
+  const possibleUrls = [
+    "http://localhost:5174", // Vite dev server
+    "http://localhost:5173", // Default Vite dev server
+    "http://localhost:4173"  // Vite preview server
+  ];
+  
+  let baseUrl = null;
+  for (const url of possibleUrls) {
+    try {
+      console.log(`Checking server at ${url}...`);
+      await waitForServer(url, 5000);
+      baseUrl = url;
+      console.log(`Found running server at ${baseUrl}`);
+      break;
+    } catch {
+      console.log(`Server not found at ${url}`);
+    }
+  }
+
+  if (!baseUrl) {
+    console.error("❌ No frontend server found. Please start the frontend server first.");
+    process.exit(1);
+  }
+
+  // Configure Chrome options for CI/headless environment
+  const chromeOptions = new chrome.Options();
+  
+  // Create unique user data directory to avoid conflicts
+  const uniqueDir = `${tmpdir()}/selenium_${Date.now()}_${Math.random()}`;
+  chromeOptions.addArguments(`--user-data-dir=${uniqueDir}`);
+  
+  // Add CI-friendly options
+  if (process.env.CI || process.env.GITHUB_ACTIONS) {
+    chromeOptions.addArguments(
+      '--headless',
+      '--no-sandbox',
+      '--disable-dev-shm-usage',
+      '--disable-gpu',
+      '--window-size=1920,1080',
+      '--disable-web-security',
+      '--disable-features=VizDisplayCompositor'
+    );
+  }
+
+  let driver = await new Builder()
+    .forBrowser("chrome")
+    .setChromeOptions(chromeOptions)
+    .build();
 
   try {
     // 1️⃣ Open the Task Add page
-    await driver.get("http://localhost:5174"); // adjust URL if needed
+    await driver.get(baseUrl);
 
     // 2️⃣ Fill in task title
     const titleInput = await driver.wait(

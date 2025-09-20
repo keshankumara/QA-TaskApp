@@ -51,8 +51,8 @@ jobs:
       - name: Start frontend server in background
         working-directory: ./frontend
         run: |
-          npm run preview &
-          sleep 10
+          nohup npm run preview > frontend.log 2>&1 &
+          sleep 15
 
       - name: Setup Chrome for Selenium
         run: |
@@ -60,5 +60,13 @@ jobs:
           sudo apt-get install -y google-chrome-stable
 
       - name: Run Selenium tests
-        working-directory: ./frontend/selenium-tests
+        working-directory: ./frontend
         run: npm run test:selenium
+
+      - name: Show logs on failure
+        if: failure()
+        run: |
+          echo "=== Backend Logs ==="
+          cat backend/backend.log || echo "No backend log found"
+          echo "=== Frontend Logs ==="
+          cat frontend/frontend.log || echo "No frontend log found"
